@@ -7,7 +7,7 @@ import PDFTextExtractor from './services/PDFTextExtractor.js';
 
 function App() {
   // PDF state
-  const [pdfUrl] = useState('/test.pdf');
+  const [pdfUrl] = useState('/sample.pdf');
   const [page, setPage] = useState(1);
   const [scale, setScale] = useState(1.5);
   const [pageCount, setPageCount] = useState(0);

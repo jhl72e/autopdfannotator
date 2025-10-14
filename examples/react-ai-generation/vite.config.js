@@ -12,5 +12,5 @@ export default defineConfig({
       '@shared': '../shared'
     }
   },
-  publicDir: '../pdfdata'
+  publicDir: '../shared/assets'
 });
