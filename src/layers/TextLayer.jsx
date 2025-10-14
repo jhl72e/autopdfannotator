@@ -1,7 +1,24 @@
 // ./layers/TextLayer.jsx
 import React, { useMemo } from "react";
-import { rectNormToAbs } from "../utils/coords";
+import { rectNormToAbs } from "../utils/coordinateUtils";
 
+/**
+ * @typedef {import('../types/annotations').TextAnnotation} TextAnnotation
+ * @typedef {import('../types/annotations').Viewport} Viewport
+ */
+
+/**
+ * Text Layer Component
+ *
+ * Renders text box annotations with progressive text reveal animation.
+ * Displays text word by word based on timeline progression.
+ *
+ * @param {Object} props - Component props
+ * @param {TextAnnotation[]} props.annos - Text annotations for current page
+ * @param {Viewport} props.viewport - PDF viewport dimensions
+ * @param {number} props.nowSec - Current timeline position in seconds
+ * @returns {JSX.Element}
+ */
 function TextLayer({ annos, viewport, nowSec }) {
   const visibleAnnotations = useMemo(() => {
     if (!annos || !viewport) return [];

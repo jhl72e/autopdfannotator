@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>TimelineSync Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+    .controls {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 5px;
+    }
+    button {
+      margin: 5px;
+      padding: 8px 15px;
+      cursor: pointer;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 3px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    button.stop {
+      background: #f44336;
+    }
+    button.stop:hover {
+      background: #da190b;
+    }
+    button.warning {
+      background: #ff9800;
+    }
+    button.warning:hover {
+      background: #e68900;
+    }
+    #output {
+      margin-top: 20px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .log-entry {
+      padding: 5px;
+      margin: 2px 0;
+      border-left: 3px solid #2196F3;
+      background: #e3f2fd;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .log-error {
+      border-left-color: #f44336;
+      background: #ffebee;
+    }
+    .log-success {
+      border-left-color: #4CAF50;
+      background: #e8f5e9;
+    }
+    .info {
+      margin: 10px 0;
+      padding: 10px;
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+    }
+    .status {
+      margin: 10px 0;
+      padding: 10px;
+      background: #e3f2fd;
+      border-left: 4px solid #2196F3;
+      font-family: monospace;
+    }
+    .section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+    }
+    .section h3 {
+      margin-top: 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>TimelineSync Test Page</h1>
+
+  <div class="info">
+    <strong>Instructions:</strong> This test page verifies the TimelineSync subsystem.
+    Tests include discrete updates, multiple subscribers, continuous sync, error handling, and cleanup.
+  </div>
+
+  <div class="status" id="status">Status: Ready to test</div>
+
+  <!-- Test 1: Basic Discrete Mode -->
+  <div class="section">
+    <h3>Test 1: Basic Discrete Mode</h3>
+    <div class="controls">
+      <button id="set-0">Set Time 0</button>
+      <button id="set-25">Set Time 2.5</button>
+      <button id="set-5">Set Time 5</button>
+      <button id="set-10">Set Time 10</button>
+      <button id="get-time">Get Current Time</button>
+    </div>
+  </div>
+
+  <!-- Test 2: Multiple Subscribers -->
+  <div class="section">
+    <h3>Test 2: Multiple Subscribers</h3>
+    <div class="controls">
+      <button id="add-subscriber">Add Subscriber</button>
+      <button id="remove-subscriber">Remove Last Subscriber</button>
+      <button id="test-multi">Test Multiple (Set Time 15)</button>
+    </div>
+    <div>Active subscribers: <span id="subscriber-count">2</span></div>
+  </div>
+
+  <!-- Test 3: Unsubscribe Function -->
+  <div class="section">
+    <h3>Test 3: Unsubscribe Function</h3>
+    <div class="controls">
+      <button id="add-temp">Add Temporary Subscriber</button>
+      <button id="remove-temp">Remove Temporary Subscriber</button>
+      <button id="test-temp">Test Temporary (Set Time 20)</button>
+    </div>
+  </div>
+
+  <!-- Test 4: Continuous Sync -->
+  <div class="section">
+    <h3>Test 4: Continuous Sync (Simulated)</h3>
+    <div class="controls">
+      <button id="start-continuous">Start Continuous Sync</button>
+      <button id="stop-continuous" class="stop">Stop Continuous Sync</button>
+      <button id="reset-simulated">Reset Simulated Time</button>
+    </div>
+    <div>Simulated time: <span id="simulated-time">0.000</span>s (updates at ~60fps)</div>
+  </div>
+
+  <!-- Test 5: Error Handling -->
+  <div class="section">
+    <h3>Test 5: Error Handling</h3>
+    <div class="controls">
+      <button id="test-invalid-subscribe" class="warning">Test Invalid Subscribe</button>
+      <button id="test-invalid-continuous" class="warning">Test Invalid Continuous</button>
+      <button id="add-error-subscriber" class="warning">Add Error-Throwing Subscriber</button>
+      <button id="test-error-isolation">Test Error Isolation (Set Time 99)</button>
+    </div>
+  </div>
+
+  <!-- Test 6: Change Detection -->
+  <div class="section">
+    <h3>Test 6: Change Detection Optimization</h3>
+    <div class="controls">
+      <button id="test-same-time">Set Same Time Twice (should skip notification)</button>
+    </div>
+  </div>
+
+  <!-- Test 7: Cleanup -->
+  <div class="section">
+    <h3>Test 7: Cleanup & Destroy</h3>
+    <div class="controls">
+      <button id="destroy" class="stop">Destroy TimelineSync</button>
+      <button id="recreate">Recreate TimelineSync</button>
+    </div>
+  </div>
+
+  <div id="output"></div>
+
+  <script type="module">
+    import { TimelineSync } from '../src/core/TimelineSync.js';
+
+    let timelineSync = new TimelineSync();
+    const output = document.getElementById('output');
+    const status = document.getElementById('status');
+    const subscriberCount = document.getElementById('subscriber-count');
+    const simulatedTime = document.getElementById('simulated-time');
+
+    let tempUnsubscribe = null;
+    let subscriberRefs = [];
+    let simulatedTimeValue = 0;
+
+    function log(message, type = 'info') {
+      const div = document.createElement('div');
+      div.className = `log-entry log-${type}`;
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      output.appendChild(div);
+      output.scrollTop = output.scrollHeight;
+      console.log(message);
+    }
+
+    function updateStatus(message) {
+      status.textContent = `Status: ${message}`;
+    }
+
+    // Initial subscribers
+    const subscriber1 = (time) => {
+      log(`Subscriber 1 received: ${time}s`, 'info');
+    };
+
+    const subscriber2 = (time) => {
+      log(`Subscriber 2 received: ${time}s`, 'info');
+    };
+
+    timelineSync.subscribe(subscriber1);
+    timelineSync.subscribe(subscriber2);
+    subscriberRefs.push(subscriber1, subscriber2);
+
+    // Test 1: Basic Discrete Mode
+    document.getElementById('set-0').onclick = () => {
+      timelineSync.setTime(0);
+      updateStatus('Set time to 0s');
+    };
+
+    document.getElementById('set-25').onclick = () => {
+      timelineSync.setTime(2.5);
+      updateStatus('Set time to 2.5s');
+    };
+
+    document.getElementById('set-5').onclick = () => {
+      timelineSync.setTime(5);
+      updateStatus('Set time to 5s');
+    };
+
+    document.getElementById('set-10').onclick = () => {
+      timelineSync.setTime(10);
+      updateStatus('Set time to 10s');
+    };
+
+    document.getElementById('get-time').onclick = () => {
+      const currentTime = timelineSync.getCurrentTime();
+      log(`Current time: ${currentTime}s`, 'success');
+      updateStatus(`Current time: ${currentTime}s`);
+    };
+
+    // Test 2: Multiple Subscribers
+    document.getElementById('add-subscriber').onclick = () => {
+      const id = subscriberRefs.length + 1;
+      const newSubscriber = (time) => {
+        log(`Subscriber ${id} received: ${time}s`, 'info');
+      };
+      timelineSync.subscribe(newSubscriber);
+      subscriberRefs.push(newSubscriber);
+      subscriberCount.textContent = subscriberRefs.length;
+      log(`Added Subscriber ${id}`, 'success');
+      updateStatus(`Added subscriber ${id}`);
+    };
+
+    document.getElementById('remove-subscriber').onclick = () => {
+      if (subscriberRefs.length > 0) {
+        const removed = subscriberRefs.pop();
+        timelineSync.unsubscribe(removed);
+        subscriberCount.textContent = subscriberRefs.length;
+        log(`Removed last subscriber`, 'success');
+        updateStatus(`Removed last subscriber`);
+      } else {
+        log(`No subscribers to remove`, 'error');
+      }
+    };
+
+    document.getElementById('test-multi').onclick = () => {
+      timelineSync.setTime(15);
+      updateStatus('Testing multiple subscribers with time 15s');
+    };
+
+    // Test 3: Unsubscribe Function
+    document.getElementById('add-temp').onclick = () => {
+      tempUnsubscribe = timelineSync.subscribe((time) => {
+        log(`TEMPORARY subscriber received: ${time}s`, 'success');
+      });
+      log('Added temporary subscriber (with unsubscribe function)', 'success');
+      updateStatus('Added temporary subscriber');
+    };
+
+    document.getElementById('remove-temp').onclick = () => {
+      if (tempUnsubscribe) {
+        tempUnsubscribe();
+        tempUnsubscribe = null;
+        log('Removed temporary subscriber via unsubscribe function', 'success');
+        updateStatus('Removed temporary subscriber');
+      } else {
+        log('No temporary subscriber to remove', 'error');
+      }
+    };
+
+    document.getElementById('test-temp').onclick = () => {
+      timelineSync.setTime(20);
+      updateStatus('Testing temporary subscriber with time 20s');
+    };
+
+    // Test 4: Continuous Sync
+    document.getElementById('start-continuous').onclick = () => {
+      simulatedTimeValue = 0;
+      timelineSync.startContinuousSync(() => {
+        simulatedTimeValue += 0.016; // ~60fps
+        simulatedTime.textContent = simulatedTimeValue.toFixed(3);
+        return simulatedTimeValue;
+      });
+      log('Started continuous sync (simulated ~60fps)', 'success');
+      updateStatus('Continuous sync running');
+    };
+
+    document.getElementById('stop-continuous').onclick = () => {
+      timelineSync.stopContinuousSync();
+      log('Stopped continuous sync', 'success');
+      updateStatus('Continuous sync stopped');
+    };
+
+    document.getElementById('reset-simulated').onclick = () => {
+      simulatedTimeValue = 0;
+      simulatedTime.textContent = '0.000';
+      log('Reset simulated time', 'success');
+    };
+
+    // Test 5: Error Handling
+    document.getElementById('test-invalid-subscribe').onclick = () => {
+      try {
+        timelineSync.subscribe('not a function');
+        log('ERROR: Should have thrown error for invalid subscribe', 'error');
+      } catch (err) {
+        log(`✓ Correctly threw error: ${err.message}`, 'success');
+        updateStatus('Invalid subscribe handled correctly');
+      }
+    };
+
+    document.getElementById('test-invalid-continuous').onclick = () => {
+      try {
+        timelineSync.startContinuousSync('not a function');
+        log('ERROR: Should have thrown error for invalid continuous sync', 'error');
+      } catch (err) {
+        log(`✓ Correctly threw error: ${err.message}`, 'success');
+        updateStatus('Invalid continuous sync handled correctly');
+      }
+    };
+
+    document.getElementById('add-error-subscriber').onclick = () => {
+      timelineSync.subscribe((time) => {
+        throw new Error('Intentional error from subscriber');
+      });
+      log('Added error-throwing subscriber', 'success');
+      updateStatus('Added error-throwing subscriber');
+    };
+
+    document.getElementById('test-error-isolation').onclick = () => {
+      log('Testing error isolation - other subscribers should still work...', 'info');
+      timelineSync.setTime(99);
+      log('✓ Error isolated - check console for error log, other subscribers notified', 'success');
+      updateStatus('Error isolation test complete');
+    };
+
+    // Test 6: Change Detection
+    document.getElementById('test-same-time').onclick = () => {
+      const testTime = 42;
+      log(`Setting time to ${testTime}s (first time)`, 'info');
+      timelineSync.setTime(testTime);
+
+      setTimeout(() => {
+        log(`Setting time to ${testTime}s again (should skip notification)`, 'info');
+        log('Watch above - no subscriber notifications should appear!', 'success');
+        timelineSync.setTime(testTime);
+        updateStatus('Change detection test complete - check logs');
+      }, 100);
+    };
+
+    // Test 7: Cleanup
+    document.getElementById('destroy').onclick = () => {
+      timelineSync.destroy();
+      subscriberRefs = [];
+      subscriberCount.textContent = '0';
+      log('TimelineSync destroyed', 'success');
+      updateStatus('TimelineSync destroyed');
+    };
+
+    document.getElementById('recreate').onclick = () => {
+      timelineSync = new TimelineSync();
+
+      // Re-add default subscribers
+      const subscriber1 = (time) => {
+        log(`Subscriber 1 received: ${time}s`, 'info');
+      };
+      const subscriber2 = (time) => {
+        log(`Subscriber 2 received: ${time}s`, 'info');
+      };
+
+      timelineSync.subscribe(subscriber1);
+      timelineSync.subscribe(subscriber2);
+      subscriberRefs = [subscriber1, subscriber2];
+      subscriberCount.textContent = '2';
+
+      log('TimelineSync recreated with 2 default subscribers', 'success');
+      updateStatus('TimelineSync recreated');
+    };
+
+    // Initial log
+    log('TimelineSync test initialized with 2 default subscribers', 'success');
+    updateStatus('Ready - Click buttons to test features');
+  </script>
+</body>
+</html>

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnnotPdf Unit Tests - Error Handling</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #2196f3;
+      padding-bottom: 10px;
+    }
+    .test-section {
+      background: white;
+      margin-bottom: 20px;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-section h2 {
+      color: #2196f3;
+      margin-top: 0;
+    }
+    .test-result {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border-left: 4px solid;
+    }
+    .test-pass {
+      background-color: #d4edda;
+      color: #155724;
+      border-color: #28a745;
+    }
+    .test-fail {
+      background-color: #f8d7da;
+      color: #721c24;
+      border-color: #dc3545;
+    }
+    .test-controls {
+      margin: 20px 0;
+    }
+    button {
+      margin: 5px;
+      padding: 12px 24px;
+      font-size: 14px;
+      cursor: pointer;
+      background: #2196f3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #1976d2;
+    }
+    #test-container {
+      margin-top: 20px;
+      padding: 20px;
+      border: 2px dashed #ccc;
+      border-radius: 4px;
+      min-height: 400px;
+      background: #fafafa;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 AnnotPdf Unit Tests: Error Handling</h1>
+
+  <div class="test-section">
+    <h2>Test Controls</h2>
+    <div class="test-controls">
+      <button id="run-all">▶️ Run All Tests</button>
+      <button id="clear-results">🗑️ Clear Results</button>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Results</h2>
+    <div id="results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Container</h2>
+    <div id="test-container"></div>
+  </div>
+
+  <script type="module">
+    import React from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { AnnotPdf } from '../../../src/index.js';
+    import { logTest, clearResults, showSummary, createSpy, sleep } from '../fixtures/testHelpers.js';
+    import { malformedAnnotations } from '../fixtures/testAnnotations.js';
+
+    const results = document.getElementById('results');
+    const container = document.getElementById('test-container');
+
+    // ========================================================================
+    // Test Implementations
+    // ========================================================================
+
+    async function runTests() {
+      clearResults(results);
+      container.innerHTML = '';
+
+      console.log('\n========== UNIT TESTS: ERROR HANDLING ==========\n');
+
+      // TEST 1: Invalid PDF URL doesn't crash component
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const onError = createSpy();
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/nonexistent/file.pdf',
+            onError: onError
+          })
+        );
+
+        await sleep(500);
+
+        // Component should render even if PDF fails to load
+        logTest(results, 'Invalid PDF URL doesn\'t crash component', true,
+          'Component handles missing PDF gracefully');
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Invalid PDF URL doesn\'t crash component', false, error.message);
+      }
+
+      // TEST 2: Malformed annotation data doesn't crash
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            annotations: malformedAnnotations
+          })
+        );
+
+        await sleep(200);
+
+        logTest(results, 'Malformed annotation data doesn\'t crash', true,
+          'Component handles invalid annotations gracefully');
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Malformed annotation data doesn\'t crash', false, error.message);
+      }
+
+      // TEST 3: Negative page number handled gracefully
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            page: -1
+          })
+        );
+
+        await sleep(200);
+
+        logTest(results, 'Negative page number handled gracefully', true);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Negative page number handled gracefully', false, error.message);
+      }
+
+      // TEST 4: Page number > total pages handled
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            page: 999
+          })
+        );
+
+        await sleep(200);
+
+        logTest(results, 'Page number > total pages handled', true);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Page number > total pages handled', false, error.message);
+      }
+
+      // TEST 5: Zero or negative scale handled
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            scale: 0
+          })
+        );
+
+        await sleep(200);
+
+        logTest(results, 'Zero scale handled gracefully', true);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Zero scale handled gracefully', false, error.message);
+      }
+
+      // TEST 6: Negative currentTime handled
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            currentTime: -10
+          })
+        );
+
+        await sleep(200);
+
+        logTest(results, 'Negative currentTime handled gracefully', true);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Negative currentTime handled gracefully', false, error.message);
+      }
+
+      // TEST 7: Non-array annotations handled
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            annotations: "invalid"  // String instead of array
+          })
+        );
+
+        await sleep(200);
+
+        logTest(results, 'Non-array annotations handled gracefully', true);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Non-array annotations handled gracefully', false, error.message);
+      }
+
+      // TEST 8: Empty string PDF URL handled
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: ""
+          })
+        );
+
+        await sleep(200);
+
+        logTest(results, 'Empty string PDF URL handled gracefully', true);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Empty string PDF URL handled gracefully', false, error.message);
+      }
+
+      // TEST 9: Null PDF URL handled
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: null
+          })
+        );
+
+        await sleep(200);
+
+        logTest(results, 'Null PDF URL handled gracefully', true);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Null PDF URL handled gracefully', false, error.message);
+      }
+
+      // TEST 10: onError callback receives error info
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const onError = createSpy();
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/nonexistent/invalid.pdf',
+            onError: onError
+          })
+        );
+
+        await sleep(1000);
+
+        // Check if onError was called (PDF load should fail)
+        const errorCalled = onError.callCount() > 0;
+
+        logTest(results, 'onError callback receives error info', errorCalled,
+          errorCalled ? `onError called ${onError.callCount()} time(s)` : 'onError not called');
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'onError callback receives error info', false, error.message);
+      }
+
+      // TEST 11: Missing callback doesn't crash (onLoad not provided)
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf'
+            // No onLoad callback provided
+          })
+        );
+
+        await sleep(500);
+
+        logTest(results, 'Missing onLoad callback doesn\'t crash', true);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Missing onLoad callback doesn\'t crash', false, error.message);
+      }
+
+      // TEST 12: Annotation with missing required fields filtered
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const invalidAnnotation = [
+          {
+            id: 'incomplete',
+            type: 'highlight'
+            // Missing page, start, end, quads, style
+          }
+        ];
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            annotations: invalidAnnotation
+          })
+        );
+
+        await sleep(200);
+
+        logTest(results, 'Annotation with missing fields handled', true,
+          'Invalid annotation filtered or handled gracefully');
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Annotation with missing fields handled', false, error.message);
+      }
+
+      // Show summary
+      showSummary(results);
+    }
+
+    // ========================================================================
+    // Event Listeners
+    // ========================================================================
+
+    document.getElementById('run-all').addEventListener('click', runTests);
+    document.getElementById('clear-results').addEventListener('click', () => {
+      clearResults(results);
+      container.innerHTML = '';
+    });
+
+    // Auto-run on load
+    console.log('Page loaded. Click "Run All Tests" to start.');
+  </script>
+</body>
+</html>

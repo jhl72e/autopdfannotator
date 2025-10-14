@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Layer Implementation Verification</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h2 {
+            margin-top: 0;
+            color: #333;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-weight: 600;
+        }
+        .status.pass {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.fail {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .layer-display {
+            position: relative;
+            width: 600px;
+            height: 400px;
+            background: #e8e8e8;
+            border: 2px solid #ccc;
+            margin: 20px 0;
+        }
+        .controls {
+            margin: 20px 0;
+        }
+        button {
+            padding: 8px 16px;
+            margin-right: 10px;
+            border: none;
+            border-radius: 4px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .info {
+            color: #666;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Layer Implementation Verification</h1>
+
+    <div class="test-container">
+        <h2>Test 1: BaseLayer Implementation</h2>
+        <div id="test1-status"></div>
+    </div>
+
+    <div class="test-container">
+        <h2>Test 2: HighlightLayer Implementation</h2>
+        <div id="test2-status"></div>
+        <div id="highlight-display" class="layer-display"></div>
+        <div class="controls">
+            <button onclick="testHighlightAnimation()">Test Animation</button>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>Test 3: TextLayer Implementation</h2>
+        <div id="test3-status"></div>
+        <div id="text-display" class="layer-display"></div>
+        <div class="controls">
+            <button onclick="testTextAnimation()">Test Animation</button>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h2>Test 4: Layer Integration Check</h2>
+        <div id="test4-status"></div>
+    </div>
+
+    <script type="module">
+        import BaseLayer from '../src/layers/BaseLayer.js';
+        import HighlightLayer from '../src/layers/HighlightLayer.js';
+        import TextLayer from '../src/layers/TextLayer.js';
+
+        const viewport = { width: 600, height: 400, scale: 1.0 };
+
+        // Test 1: BaseLayer
+        function test1() {
+            try {
+                // Should not be able to instantiate BaseLayer directly
+                try {
+                    const container = document.createElement('div');
+                    new BaseLayer(container, viewport);
+                    return fail('BaseLayer should not be instantiable directly');
+                } catch (e) {
+                    if (!e.message.includes('abstract')) {
+                        throw e;
+                    }
+                }
+
+                return pass('BaseLayer correctly prevents direct instantiation');
+            } catch (e) {
+                return fail(`BaseLayer test failed: ${e.message}`);
+            }
+        }
+
+        // Test 2: HighlightLayer
+        function test2() {
+            try {
+                const container = document.getElementById('highlight-display');
+                const layer = new HighlightLayer(container, viewport);
+
+                // Check layer created successfully
+                if (!layer.layerElement) {
+                    return fail('HighlightLayer did not create layerElement');
+                }
+
+                // Check extends BaseLayer
+                if (!(layer instanceof BaseLayer)) {
+                    return fail('HighlightLayer does not extend BaseLayer');
+                }
+
+                // Test annotation setting
+                const annotations = [{
+                    id: 'h1',
+                    type: 'highlight',
+                    mode: 'quads',
+                    start: 0,
+                    end: 2,
+                    quads: [{ x: 0.1, y: 0.1, w: 0.3, h: 0.05 }],
+                    style: { color: 'rgba(255,230,100,0.5)' }
+                }];
+
+                layer.setAnnotations(annotations);
+                layer.render();
+
+                // Check elements created
+                if (layer.elements.size === 0) {
+                    return fail('HighlightLayer did not create elements');
+                }
+
+                // Test updateTime
+                layer.updateTime(1.0);
+
+                // Clean up
+                layer.destroy();
+
+                if (!layer.isDestroyed) {
+                    return fail('HighlightLayer destroy did not set isDestroyed');
+                }
+
+                return pass('HighlightLayer implementation functional ✓');
+            } catch (e) {
+                return fail(`HighlightLayer test failed: ${e.message}`);
+            }
+        }
+
+        // Test 3: TextLayer
+        function test3() {
+            try {
+                const container = document.getElementById('text-display');
+                const layer = new TextLayer(container, viewport);
+
+                // Check layer created successfully
+                if (!layer.layerElement) {
+                    return fail('TextLayer did not create layerElement');
+                }
+
+                // Check extends BaseLayer
+                if (!(layer instanceof BaseLayer)) {
+                    return fail('TextLayer does not extend BaseLayer');
+                }
+
+                // Test annotation setting
+                const annotations = [{
+                    id: 't1',
+                    type: 'text',
+                    start: 0,
+                    end: 3,
+                    content: 'This is a test annotation',
+                    x: 0.1,
+                    y: 0.2,
+                    w: 0.5,
+                    h: 0.1,
+                    style: { bg: 'rgba(255,255,255,0.9)', color: '#000' }
+                }];
+
+                layer.setAnnotations(annotations);
+                layer.render();
+
+                // Check elements created
+                if (layer.textElements.size === 0) {
+                    return fail('TextLayer did not create textElements');
+                }
+
+                // Test updateTime
+                layer.updateTime(1.5);
+
+                // Check text reveal works
+                const element = layer.textElements.get('t1').element;
+                if (element.textContent.length === 0) {
+                    return fail('TextLayer did not reveal text');
+                }
+
+                // Clean up
+                layer.destroy();
+
+                if (!layer.isDestroyed) {
+                    return fail('TextLayer destroy did not set isDestroyed');
+                }
+
+                return pass('TextLayer implementation functional ✓');
+            } catch (e) {
+                return fail(`TextLayer test failed: ${e.message}`);
+            }
+        }
+
+        // Test 4: Integration
+        function test4() {
+            try {
+                const container = document.createElement('div');
+                document.body.appendChild(container);
+
+                const highlightLayer = new HighlightLayer(container, viewport);
+                const textLayer = new TextLayer(container, viewport);
+
+                // Both should coexist
+                if (!highlightLayer.layerElement || !textLayer.layerElement) {
+                    return fail('Layers cannot coexist');
+                }
+
+                // Check zIndex ordering
+                const hZ = parseInt(highlightLayer.layerElement.style.zIndex);
+                const tZ = parseInt(textLayer.layerElement.style.zIndex);
+
+                if (hZ >= tZ) {
+                    return fail('Layer zIndex ordering incorrect (highlight should be below text)');
+                }
+
+                // Clean up
+                highlightLayer.destroy();
+                textLayer.destroy();
+                document.body.removeChild(container);
+
+                return pass('Layer integration successful ✓');
+            } catch (e) {
+                return fail(`Integration test failed: ${e.message}`);
+            }
+        }
+
+        function pass(message) {
+            return { success: true, message };
+        }
+
+        function fail(message) {
+            return { success: false, message };
+        }
+
+        function displayResult(elementId, result) {
+            const element = document.getElementById(elementId);
+            element.className = `status ${result.success ? 'pass' : 'fail'}`;
+            element.textContent = result.message;
+        }
+
+        // Run tests
+        displayResult('test1-status', test1());
+        displayResult('test2-status', test2());
+        displayResult('test3-status', test3());
+        displayResult('test4-status', test4());
+
+        // Animation demos
+        window.testHighlightAnimation = function() {
+            const container = document.getElementById('highlight-display');
+            container.innerHTML = '';
+
+            const layer = new HighlightLayer(container, viewport);
+            layer.setAnnotations([{
+                id: 'demo-h',
+                type: 'highlight',
+                mode: 'quads',
+                start: 0,
+                end: 3,
+                quads: [
+                    { x: 0.1, y: 0.2, w: 0.7, h: 0.05 },
+                    { x: 0.1, y: 0.3, w: 0.6, h: 0.05 }
+                ],
+                style: { color: 'rgba(255,230,100,0.5)' }
+            }]);
+            layer.render();
+
+            let time = 0;
+            const interval = setInterval(() => {
+                layer.updateTime(time);
+                time += 0.1;
+                if (time > 3) {
+                    clearInterval(interval);
+                }
+            }, 100);
+        };
+
+        window.testTextAnimation = function() {
+            const container = document.getElementById('text-display');
+            container.innerHTML = '';
+
+            const layer = new TextLayer(container, viewport);
+            layer.setAnnotations([{
+                id: 'demo-t',
+                type: 'text',
+                start: 0,
+                end: 4,
+                content: 'This text appears with a progressive typing effect',
+                x: 0.1,
+                y: 0.3,
+                w: 0.6,
+                h: 0.15,
+                style: { bg: 'rgba(255,255,255,0.95)', color: '#1f2937' }
+            }]);
+            layer.render();
+
+            let time = 0;
+            const interval = setInterval(() => {
+                layer.updateTime(time);
+                time += 0.1;
+                if (time > 4) {
+                    clearInterval(interval);
+                }
+            }, 100);
+        };
+    </script>
+</body>
+</html>

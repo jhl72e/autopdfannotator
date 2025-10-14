@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnnotPdf Unit Tests - Rendering</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #2196f3;
+      padding-bottom: 10px;
+    }
+    .test-section {
+      background: white;
+      margin-bottom: 20px;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-section h2 {
+      color: #2196f3;
+      margin-top: 0;
+    }
+    .test-result {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border-left: 4px solid;
+    }
+    .test-pass {
+      background-color: #d4edda;
+      color: #155724;
+      border-color: #28a745;
+    }
+    .test-fail {
+      background-color: #f8d7da;
+      color: #721c24;
+      border-color: #dc3545;
+    }
+    .test-controls {
+      margin: 20px 0;
+    }
+    button {
+      margin: 5px;
+      padding: 12px 24px;
+      font-size: 14px;
+      cursor: pointer;
+      background: #2196f3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #1976d2;
+    }
+    button:active {
+      background: #1565c0;
+    }
+    #test-container {
+      margin-top: 20px;
+      padding: 20px;
+      border: 2px dashed #ccc;
+      border-radius: 4px;
+      min-height: 400px;
+      background: #fafafa;
+    }
+    .test-component {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      background: white;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 AnnotPdf Unit Tests: Rendering</h1>
+
+  <div class="test-section">
+    <h2>Test Controls</h2>
+    <div class="test-controls">
+      <button id="run-all">▶️ Run All Tests</button>
+      <button id="clear-results">🗑️ Clear Results</button>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Results</h2>
+    <div id="results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Container</h2>
+    <div id="test-container"></div>
+  </div>
+
+  <script type="module">
+    import React from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { AnnotPdf } from '../../../src/index.js';
+    import { logTest, clearResults, showSummary } from '../fixtures/testHelpers.js';
+
+    const results = document.getElementById('results');
+    const container = document.getElementById('test-container');
+
+    // ========================================================================
+    // Test Implementations
+    // ========================================================================
+
+    async function runTests() {
+      clearResults(results);
+      container.innerHTML = '';
+
+      console.log('\n========== UNIT TESTS: RENDERING ==========\n');
+
+      // TEST 1: Component renders without errors
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.id = 'test-1';
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf'
+          })
+        );
+
+        // Wait for render
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        logTest(results, 'Component renders without errors', true);
+
+        // Cleanup
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Component renders without errors', false, error.message);
+      }
+
+      // TEST 2: Canvas element created
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.id = 'test-2';
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf'
+          })
+        );
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const canvas = testDiv.querySelector('canvas');
+        const passed = canvas !== null;
+
+        logTest(results, 'Canvas element created', passed,
+          passed ? 'Canvas found' : 'Canvas not found');
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Canvas element created', false, error.message);
+      }
+
+      // TEST 3: Layer container div created
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.id = 'test-3';
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf'
+          })
+        );
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const layerDiv = testDiv.querySelector('div > div:last-child');
+        const passed = layerDiv !== null;
+
+        logTest(results, 'Layer container div created', passed,
+          passed ? 'Layer div found' : 'Layer div not found');
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Layer container div created', false, error.message);
+      }
+
+      // TEST 4: Correct DOM structure (div → canvas + layer div)
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.id = 'test-4';
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf'
+          })
+        );
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const containerDiv = testDiv.querySelector('div');
+        const canvas = containerDiv?.querySelector('canvas');
+        const layerDiv = containerDiv?.querySelectorAll('div')[0];
+
+        const correctStructure = containerDiv && canvas && layerDiv;
+        const canvasFirst = canvas === containerDiv.children[0];
+        const layerSecond = layerDiv === containerDiv.children[1];
+
+        const passed = correctStructure && canvasFirst && layerSecond;
+
+        logTest(results, 'Correct DOM structure (div → canvas + layer div)', passed,
+          passed ? 'Structure correct' : 'Structure incorrect');
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Correct DOM structure', false, error.message);
+      }
+
+      // TEST 5: Default container styles applied
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.id = 'test-5';
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf'
+          })
+        );
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const containerDiv = testDiv.querySelector('div');
+        const styles = window.getComputedStyle(containerDiv);
+
+        const hasRelativePosition = styles.position === 'relative';
+        const hasInlineBlockDisplay = styles.display === 'inline-block';
+        const hasLineHeight0 = parseFloat(styles.lineHeight) === 0;
+
+        const passed = hasRelativePosition && hasInlineBlockDisplay && hasLineHeight0;
+
+        logTest(results, 'Default container styles applied', passed,
+          passed ? 'All default styles present' :
+          `Missing styles - position: ${styles.position}, display: ${styles.display}, lineHeight: ${styles.lineHeight}`);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Default container styles applied', false, error.message);
+      }
+
+      // TEST 6: Layer div has absolute positioning
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.id = 'test-6';
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf'
+          })
+        );
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Select the correct layer div - it's the second child of the container
+        const containerDiv = testDiv.querySelector('div');
+        const layerDiv = containerDiv.children[1]; // Second child is the layer div
+
+        const styles = window.getComputedStyle(layerDiv);
+
+        const isAbsolute = styles.position === 'absolute';
+        const isTopZero = styles.top === '0px';
+        const isLeftZero = styles.left === '0px';
+        const hasPointerEventsNone = styles.pointerEvents === 'none';
+
+        const passed = isAbsolute && isTopZero && isLeftZero && hasPointerEventsNone;
+
+        logTest(results, 'Layer div has correct absolute positioning', passed,
+          passed ? 'All layer styles correct' :
+          `Incorrect styles - position: ${styles.position}, top: ${styles.top}, left: ${styles.left}, pointerEvents: ${styles.pointerEvents}`);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Layer div positioning', false, error.message);
+      }
+
+      // TEST 7: Custom className applied
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.id = 'test-7';
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const customClass = 'my-custom-pdf-viewer';
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            className: customClass
+          })
+        );
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const containerDiv = testDiv.querySelector('div');
+        const hasClass = containerDiv?.classList.contains(customClass);
+
+        logTest(results, 'Custom className applied', hasClass,
+          hasClass ? `Class "${customClass}" found` : `Class "${customClass}" not found`);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Custom className applied', false, error.message);
+      }
+
+      // TEST 8: Custom inline styles override defaults
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.id = 'test-8';
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const customStyles = {
+          backgroundColor: 'rgb(255, 0, 0)',
+          border: '2px solid blue'
+        };
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            style: customStyles
+          })
+        );
+
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        const containerDiv = testDiv.querySelector('div');
+        const styles = window.getComputedStyle(containerDiv);
+
+        const hasBgColor = styles.backgroundColor === 'rgb(255, 0, 0)';
+        // More robust border check - check border parts separately
+        const hasBorderWidth = styles.borderWidth.includes('2px') || styles.borderLeftWidth === '2px';
+        const hasBorderColor = styles.borderColor.includes('0, 0, 255') || styles.borderLeftColor === 'rgb(0, 0, 255)';
+
+        const passed = hasBgColor && hasBorderWidth && hasBorderColor;
+
+        logTest(results, 'Custom inline styles override defaults', passed,
+          passed ? 'Custom styles applied' :
+          `Styles not applied - bg: ${styles.backgroundColor}, border: ${styles.border}, borderWidth: ${styles.borderWidth}, borderColor: ${styles.borderColor}`);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Custom inline styles override defaults', false, error.message);
+      }
+
+      // TEST 9: Custom canvasStyle applied
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.id = 'test-9';
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const canvasStyles = {
+          border: '3px solid green',
+          borderRadius: '10px'
+        };
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            canvasStyle: canvasStyles
+          })
+        );
+
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        const canvas = testDiv.querySelector('canvas');
+        const styles = window.getComputedStyle(canvas);
+
+        // More robust checks
+        const hasBorderWidth = styles.borderWidth.includes('3px') || styles.borderLeftWidth === '3px';
+        const hasBorderColor = styles.borderColor.includes('0, 128, 0') || styles.borderLeftColor === 'rgb(0, 128, 0)';
+        const hasBorderRadius = parseFloat(styles.borderRadius) === 10 || styles.borderRadius === '10px';
+
+        const passed = hasBorderWidth && hasBorderColor && hasBorderRadius;
+
+        logTest(results, 'Custom canvasStyle applied', passed,
+          passed ? 'Canvas styles applied' :
+          `Canvas styles not applied - borderWidth: ${styles.borderWidth}, borderColor: ${styles.borderColor}, borderRadius: ${styles.borderRadius}`);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Custom canvasStyle applied', false, error.message);
+      }
+
+      // TEST 10: Canvas has display block
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.id = 'test-10';
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf'
+          })
+        );
+
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        const canvas = testDiv.querySelector('canvas');
+        const styles = window.getComputedStyle(canvas);
+
+        const passed = styles.display === 'block';
+
+        logTest(results, 'Canvas has display block', passed,
+          passed ? 'Display is block' : `Display is ${styles.display}`);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Canvas has display block', false, error.message);
+      }
+
+      // Show summary
+      showSummary(results);
+    }
+
+    // ========================================================================
+    // Event Listeners
+    // ========================================================================
+
+    document.getElementById('run-all').addEventListener('click', runTests);
+    document.getElementById('clear-results').addEventListener('click', () => {
+      clearResults(results);
+      container.innerHTML = '';
+    });
+
+    // Auto-run on load
+    console.log('Page loaded. Click "Run All Tests" to start.');
+  </script>
+</body>
+</html>

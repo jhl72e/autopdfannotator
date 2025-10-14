@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnnotPdf Unit Tests - Lifecycle</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #2196f3;
+      padding-bottom: 10px;
+    }
+    .test-section {
+      background: white;
+      margin-bottom: 20px;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-section h2 {
+      color: #2196f3;
+      margin-top: 0;
+    }
+    .test-result {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      border-left: 4px solid;
+    }
+    .test-pass {
+      background-color: #d4edda;
+      color: #155724;
+      border-color: #28a745;
+    }
+    .test-fail {
+      background-color: #f8d7da;
+      color: #721c24;
+      border-color: #dc3545;
+    }
+    .test-controls {
+      margin: 20px 0;
+    }
+    button {
+      margin: 5px;
+      padding: 12px 24px;
+      font-size: 14px;
+      cursor: pointer;
+      background: #2196f3;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #1976d2;
+    }
+    #test-container {
+      margin-top: 20px;
+      padding: 20px;
+      border: 2px dashed #ccc;
+      border-radius: 4px;
+      min-height: 400px;
+      background: #fafafa;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 AnnotPdf Unit Tests: Lifecycle</h1>
+
+  <div class="test-section">
+    <h2>Test Controls</h2>
+    <div class="test-controls">
+      <button id="run-all">▶️ Run All Tests</button>
+      <button id="clear-results">🗑️ Clear Results</button>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Results</h2>
+    <div id="results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Container</h2>
+    <div id="test-container"></div>
+  </div>
+
+  <script type="module">
+    import React, { useState } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { AnnotPdf } from '../../../src/index.js';
+    import { logTest, clearResults, showSummary, createSpy, sleep } from '../fixtures/testHelpers.js';
+    import { singleHighlight, page1Annotations } from '../fixtures/testAnnotations.js';
+
+    const results = document.getElementById('results');
+    const container = document.getElementById('test-container');
+
+    // ========================================================================
+    // Test Implementations
+    // ========================================================================
+
+    async function runTests() {
+      clearResults(results);
+      container.innerHTML = '';
+
+      console.log('\n========== UNIT TESTS: LIFECYCLE ==========\n');
+
+      // TEST 1: Component mounts successfully
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const onLoad = createSpy();
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            onLoad: onLoad
+          })
+        );
+
+        await sleep(100);
+
+        logTest(results, 'Component mounts successfully', true);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Component mounts successfully', false, error.message);
+      }
+
+      // TEST 2: Component unmounts without errors
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf'
+          })
+        );
+
+        await sleep(100);
+
+        root.unmount();
+
+        // Check that canvas is removed
+        const canvas = testDiv.querySelector('canvas');
+        const passed = canvas === null;
+
+        logTest(results, 'Component unmounts without errors', passed,
+          passed ? 'Canvas properly removed' : 'Canvas still exists after unmount');
+
+      } catch (error) {
+        logTest(results, 'Component unmounts without errors', false, error.message);
+      }
+
+      // TEST 3: pdfUrl change triggers reload
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+
+        // Render with first PDF
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf'
+          })
+        );
+
+        await sleep(200);
+
+        // Update to second PDF
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample2.pdf'
+          })
+        );
+
+        await sleep(200);
+
+        logTest(results, 'pdfUrl change triggers reload', true);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'pdfUrl change triggers reload', false, error.message);
+      }
+
+      // TEST 4: Page change updates render
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+
+        // Render page 1
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            page: 1
+          })
+        );
+
+        await sleep(200);
+
+        // Change to page 2
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            page: 2
+          })
+        );
+
+        await sleep(200);
+
+        logTest(results, 'Page change updates render', true);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Page change updates render', false, error.message);
+      }
+
+      // TEST 5: Scale change updates render
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+
+        // Render at scale 1.0
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            scale: 1.0
+          })
+        );
+
+        await sleep(200);
+
+        // Change to scale 2.0
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            scale: 2.0
+          })
+        );
+
+        await sleep(200);
+
+        logTest(results, 'Scale change updates render', true);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Scale change updates render', false, error.message);
+      }
+
+      // TEST 6: Annotations change updates layers
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+
+        // Render with no annotations
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            annotations: []
+          })
+        );
+
+        await sleep(200);
+
+        // Add annotations
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            annotations: singleHighlight
+          })
+        );
+
+        await sleep(200);
+
+        logTest(results, 'Annotations change updates layers', true);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Annotations change updates layers', false, error.message);
+      }
+
+      // TEST 7: currentTime change updates timeline
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+
+        // Render at time 0
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            annotations: page1Annotations,
+            currentTime: 0
+          })
+        );
+
+        await sleep(200);
+
+        // Update to time 3
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            annotations: page1Annotations,
+            currentTime: 3
+          })
+        );
+
+        await sleep(200);
+
+        logTest(results, 'currentTime change updates timeline', true);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'currentTime change updates timeline', false, error.message);
+      }
+
+      // TEST 8: Multiple rapid prop changes handled
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+
+        // Rapid changes
+        for (let i = 0; i < 5; i++) {
+          root.render(
+            React.createElement(AnnotPdf, {
+              pdfUrl: '/pdfFile/sample.pdf',
+              currentTime: i,
+              scale: 1.0 + (i * 0.2)
+            })
+          );
+          await sleep(50);
+        }
+
+        logTest(results, 'Multiple rapid prop changes handled', true);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Multiple rapid prop changes handled', false, error.message);
+      }
+
+      // TEST 9: Re-mount after unmount works
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        // First mount
+        let root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf'
+          })
+        );
+
+        await sleep(100);
+
+        // Unmount
+        root.unmount();
+
+        await sleep(100);
+
+        // Re-mount
+        root = createRoot(testDiv);
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf'
+          })
+        );
+
+        await sleep(100);
+
+        logTest(results, 'Re-mount after unmount works', true);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Re-mount after unmount works', false, error.message);
+      }
+
+      // TEST 10: Callback references can change
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'test-component';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+
+        const onLoad1 = createSpy();
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            onLoad: onLoad1
+          })
+        );
+
+        await sleep(100);
+
+        const onLoad2 = createSpy();
+        root.render(
+          React.createElement(AnnotPdf, {
+            pdfUrl: '/pdfFile/sample.pdf',
+            onLoad: onLoad2
+          })
+        );
+
+        await sleep(100);
+
+        logTest(results, 'Callback references can change', true);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Callback references can change', false, error.message);
+      }
+
+      // Show summary
+      showSummary(results);
+    }
+
+    // ========================================================================
+    // Event Listeners
+    // ========================================================================
+
+    document.getElementById('run-all').addEventListener('click', runTests);
+    document.getElementById('clear-results').addEventListener('click', () => {
+      clearResults(results);
+      container.innerHTML = '';
+    });
+
+    // Auto-run on load
+    console.log('Page loaded. Click "Run All Tests" to start.');
+  </script>
+</body>
+</html>

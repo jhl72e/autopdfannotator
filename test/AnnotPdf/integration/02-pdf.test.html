@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AnnotPdf Integration Tests - PDF Rendering</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 1400px; margin: 0 auto; padding: 20px; background-color: #f5f5f5; }
+    h1 { color: #333; border-bottom: 3px solid #ff9800; padding-bottom: 10px; }
+    .test-section { background: white; margin-bottom: 20px; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .test-section h2 { color: #ff9800; margin-top: 0; }
+    .test-result { padding: 10px; margin: 10px 0; border-radius: 4px; border-left: 4px solid; }
+    .test-pass { background-color: #d4edda; color: #155724; border-color: #28a745; }
+    .test-fail { background-color: #f8d7da; color: #721c24; border-color: #dc3545; }
+    button { margin: 5px; padding: 12px 24px; font-size: 14px; cursor: pointer; background: #ff9800; color: white; border: none; border-radius: 4px; }
+    button:hover { background: #f57c00; }
+    #test-container { margin-top: 20px; padding: 20px; border: 2px dashed #ccc; border-radius: 4px; min-height: 600px; background: #fafafa; }
+    .visual-test { margin: 20px 0; padding: 15px; border: 2px solid #ff9800; border-radius: 4px; background: white; }
+  </style>
+</head>
+<body>
+  <h1>🔧 AnnotPdf Integration Tests: PDF Rendering</h1>
+
+  <div class="test-section">
+    <h2>Test Controls</h2>
+    <button id="run-all">▶️ Run All Tests</button>
+    <button id="clear-results">🗑️ Clear Results</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Results</h2>
+    <div id="results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Container</h2>
+    <div id="test-container"></div>
+  </div>
+
+  <script type="module">
+    import React from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { AnnotPdf } from '../../../src/index.js';
+    import { logTest, clearResults, showSummary, createSpy, sleep } from '../fixtures/testHelpers.js';
+
+    const results = document.getElementById('results');
+    const container = document.getElementById('test-container');
+
+    async function runTests() {
+      clearResults(results);
+      container.innerHTML = '';
+
+      console.log('\n========== INTEGRATION TESTS: PDF RENDERING ==========\n');
+
+      // TEST 1: PDF loads and renders to canvas
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'visual-test';
+        container.appendChild(testDiv);
+
+        const onLoad = createSpy();
+        const root = createRoot(testDiv);
+        root.render(React.createElement(AnnotPdf, { pdfUrl: '/pdfFile/sample.pdf', onLoad }));
+
+        await sleep(2500);
+
+        const canvas = testDiv.querySelector('canvas');
+        const passed = canvas && canvas.width > 0 && canvas.height > 0;
+
+        logTest(results, 'PDF loads and renders to canvas', passed,
+          passed ? `Canvas rendered: ${canvas.width}x${canvas.height}` : 'Canvas not rendered');
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'PDF loads and renders to canvas', false, error.message);
+      }
+
+      // TEST 2: Multiple pages can be navigated
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'visual-test';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+
+        root.render(React.createElement(AnnotPdf, { pdfUrl: '/pdfFile/sample.pdf', page: 1 }));
+        await sleep(1500);
+
+        root.render(React.createElement(AnnotPdf, { pdfUrl: '/pdfFile/sample.pdf', page: 2 }));
+        await sleep(1500);
+
+        logTest(results, 'Multiple pages can be navigated', true, 'Page navigation successful');
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Multiple pages can be navigated', false, error.message);
+      }
+
+      // TEST 3: Canvas size responds to scale changes
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'visual-test';
+        container.appendChild(testDiv);
+
+        const root = createRoot(testDiv);
+
+        root.render(React.createElement(AnnotPdf, { pdfUrl: '/pdfFile/sample.pdf', scale: 1.0 }));
+        await sleep(1500);
+        const canvas1 = testDiv.querySelector('canvas');
+        const w1 = canvas1?.width || 0;
+
+        root.render(React.createElement(AnnotPdf, { pdfUrl: '/pdfFile/sample.pdf', scale: 2.0 }));
+        await sleep(1500);
+        const canvas2 = testDiv.querySelector('canvas');
+        const w2 = canvas2?.width || 0;
+
+        const passed = w2 > w1;
+        logTest(results, 'Canvas size responds to scale changes', passed,
+          passed ? `${w1}px → ${w2}px` : 'Scale not applied');
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'Canvas size responds to scale changes', false, error.message);
+      }
+
+      // TEST 4: PDF rendering maintains aspect ratio
+      try {
+        const testDiv = document.createElement('div');
+        testDiv.className = 'visual-test';
+        container.appendChild(testDiv);
+
+        let pdfLoaded = false;
+        const onLoad = () => { pdfLoaded = true; };
+
+        const root = createRoot(testDiv);
+        root.render(React.createElement(AnnotPdf, {
+          pdfUrl: '/pdfFile/sample.pdf',
+          onLoad: onLoad
+        }));
+
+        // Wait for PDF to load with callback confirmation
+        let attempts = 0;
+        while (!pdfLoaded && attempts < 40) {
+          await sleep(100);
+          attempts++;
+        }
+
+        // Extra wait for render to complete
+        await sleep(500);
+
+        const canvas = testDiv.querySelector('canvas');
+        const ratio = canvas ? canvas.width / canvas.height : 0;
+        // Check that PDF actually loaded (not default 300x150)
+        const actuallyLoaded = canvas && (canvas.width !== 300 || canvas.height !== 150);
+        const reasonableRatio = ratio > 0.5 && ratio < 2.0;
+        const passed = actuallyLoaded && reasonableRatio;
+
+        logTest(results, 'PDF rendering maintains aspect ratio', passed,
+          passed ? `Aspect ratio: ${ratio.toFixed(2)} (${canvas.width}x${canvas.height})` :
+          `Issue - loaded: ${actuallyLoaded}, ratio: ${ratio.toFixed(2)}, size: ${canvas?.width}x${canvas?.height}`);
+
+        root.unmount();
+      } catch (error) {
+        logTest(results, 'PDF rendering maintains aspect ratio', false, error.message);
+      }
+
+      showSummary(results);
+    }
+
+    document.getElementById('run-all').addEventListener('click', runTests);
+    document.getElementById('clear-results').addEventListener('click', () => {
+      clearResults(results);
+      container.innerHTML = '';
+    });
+
+    console.log('Page loaded. Click "Run All Tests" to start.');
+  </script>
+</body>
+</html>

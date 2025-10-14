@@ -1,6 +1,23 @@
 // ./layers/DrawingLayer.jsx
 import React, { useEffect, useRef } from "react";
 
+/**
+ * @typedef {import('../types/annotations').InkAnnotation} InkAnnotation
+ * @typedef {import('../types/annotations').Viewport} Viewport
+ */
+
+/**
+ * Drawing/Ink Layer Component
+ *
+ * Renders ink/drawing annotations with progressive stroke animation.
+ * Draws stroke points progressively based on point time offsets.
+ *
+ * @param {Object} props - Component props
+ * @param {InkAnnotation[]} props.annos - Ink annotations for current page
+ * @param {Viewport} props.viewport - PDF viewport dimensions
+ * @param {number} props.nowSec - Current timeline position in seconds
+ * @returns {JSX.Element}
+ */
 function DrawingLayer({ annos, viewport, nowSec }) {
   const canvasRef = useRef(null);
   const rafRef = useRef();

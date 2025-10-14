@@ -1,7 +1,24 @@
 // ./layers/HighlightLayer.jsx
 import React, { useEffect, useRef } from "react";
-import { rectNormToAbs } from "../utils/coords";
+import { rectNormToAbs } from "../utils/coordinateUtils";
 
+/**
+ * @typedef {import('../types/annotations').HighlightAnnotation} HighlightAnnotation
+ * @typedef {import('../types/annotations').Viewport} Viewport
+ */
+
+/**
+ * Highlight Layer Component
+ *
+ * Renders highlight annotations with progressive reveal animation.
+ * Uses scaleX transform to animate from left to right based on timeline.
+ *
+ * @param {Object} props - Component props
+ * @param {HighlightAnnotation[]} props.annos - Highlight annotations for current page
+ * @param {Viewport} props.viewport - PDF viewport dimensions
+ * @param {number} props.nowSec - Current timeline position in seconds
+ * @returns {JSX.Element}
+ */
 function HighlightLayer({ annos, viewport, nowSec }) {
   const containerRef = useRef(null);
   const rafRef = useRef();

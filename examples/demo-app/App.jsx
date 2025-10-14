@@ -6,23 +6,31 @@ import React, {
   useCallback,
   useMemo,
 } from "react";
-import PdfViewer from "./PdfViewer";
-import DrawingInputModal from "./components/DrawingInputModal";
-import HighlightInputModal from "./components/HighlightInputModal";
-import TextInputModal from "./components/TextInputModal";
+import PdfViewer from "../../src/core/PdfViewer";
+import DrawingInputModal from "./features/manual-creation/DrawingInputModal";
+import HighlightInputModal from "./features/manual-creation/HighlightInputModal";
+import TextInputModal from "./features/manual-creation/TextInputModal";
+/*--------------------------------------AI Annotation System - Import--------------------------------------*/
+import AIAnnotationGenerator from "./features/ai-generation/AIAnnotationGenerator";
+/*--------------------------------------AI Annotation System - Import End--------------------------------------*/
 import "./App.css";
 
 export default function App() {
   const [pdfUrl, setPdfUrl] = useState("/pdfFile/test.pdf");
   const [pageNum, setPageNum] = useState(1);
   const [pageCount, setPageCount] = useState(0);
-  const [scale, setScale] = useState(2.5);
+  const [scale, setScale] = useState(1.2);
   const [isDrawingModalOpen, setIsDrawingModalOpen] = useState(false);
   const [isHighlightModalOpen, setIsHighlightModalOpen] = useState(false);
   const [isTextModalOpen, setIsTextModalOpen] = useState(false);
   const [userDrawings, setUserDrawings] = useState([]);
   const [userHighlights, setUserHighlights] = useState([]);
   const [userTexts, setUserTexts] = useState([]);
+  /*--------------------------------------AI Annotation System - State--------------------------------------*/
+  const [isAIGeneratorOpen, setIsAIGeneratorOpen] = useState(false);
+  const [aiAnnotations, setAiAnnotations] = useState([]);
+  const [aiScript, setAiScript] = useState("");
+  /*--------------------------------------AI Annotation System - State End--------------------------------------*/
 
   const audioRef = useRef(null);
   const [nowSec, setNowSec] = useState(0);
@@ -45,37 +53,14 @@ export default function App() {
 
   const annotations = useMemo(
     () => [
-      {
-        id: "h1",
-        type: "highlight",
-        page: 1,
-        mode: "quads",
-        quads: [
-          { x: 0.1, y: 0.2, w: 0.3, h: 0.03 },
-          { x: 0.1, y: 0.24, w: 0.25, h: 0.03 },
-        ],
-        style: { color: "rgba(255,230,100,0.35)" },
-        start: 2.0,
-        end: 8.0,
-      },
-      {
-        id: "t1",
-        type: "text",
-        page: 1,
-        x: 0.62,
-        y: 0.18,
-        w: 0.25,
-        h: 0.1,
-        content: "참고: 이 부분은 핵심 요약입니다.",
-        style: { bg: "rgba(255,255,255,0.9)", color: "#1f2937" },
-        start: 4.0,
-        end: 10.0,
-      },
       ...userDrawings,
       ...userHighlights,
       ...userTexts,
+      /*--------------------------------------AI Annotation System - Annotations--------------------------------------*/
+      ...aiAnnotations,
+      /*--------------------------------------AI Annotation System - Annotations End--------------------------------------*/
     ],
-    [userDrawings, userHighlights, userTexts]
+    [userDrawings, userHighlights, userTexts, aiAnnotations]
   );
 
   // Handle saving drawing from modal
@@ -93,14 +78,24 @@ export default function App() {
     setUserTexts((prev) => [...prev, text]);
   }, []);
 
+  /*--------------------------------------AI Annotation System - Handlers--------------------------------------*/
+  // Handle AI generated content
+  const handleAIGenerated = useCallback((data) => {
+    setAiScript(data.script);
+    setAiAnnotations(data.annotations);
+    console.log("AI Generated Script:", data.script);
+    console.log("AI Generated Annotations:", data.annotations);
+  }, []);
+  /*--------------------------------------AI Annotation System - Handlers End--------------------------------------*/
+
   // 콜백 함수들 메모이제이션
   const handlePdfLoad = useCallback(({ pageCount }) => {
-    console.log("📄 PDF 로드 완료:", pageCount, "페이지");
+    console.log("PDF 로드 완료:", pageCount, "페이지");
     setPageCount(pageCount);
   }, []);
 
   const handleError = useCallback((e) => {
-    console.error("❌ PDF 에러:", e);
+    console.error("PDF 에러:", e);
   }, []);
 
   return (
@@ -134,6 +129,17 @@ export default function App() {
         pageNum={pageNum}
         scale={scale}
       />
+
+      {/*--------------------------------------AI Annotation System - Modal--------------------------------------*/}
+      <AIAnnotationGenerator
+        isOpen={isAIGeneratorOpen}
+        onClose={() => setIsAIGeneratorOpen(false)}
+        onGenerate={handleAIGenerated}
+        pdfUrl={pdfUrl}
+        pageNum={pageNum}
+      />
+      {/*--------------------------------------AI Annotation System - Modal End--------------------------------------*/}
+
       {/*-------------------------------------데이터 생성용 Modal-------------------------------------*/}
 
       {/*-------------------------------------조작용 button-------------------------------------*/}
@@ -188,6 +194,22 @@ export default function App() {
           🎨 그림 추가
         </button>
 
+        {/*--------------------------------------AI Annotation System - Button--------------------------------------*/}
+        <button
+          onClick={() => setIsAIGeneratorOpen(true)}
+          style={{
+            padding: "8px 16px",
+            backgroundColor: "#8b5cf6",
+            color: "white",
+            border: "none",
+            borderRadius: "4px",
+            cursor: "pointer",
+          }}
+        >
+          🤖 AI 생성
+        </button>
+        {/*--------------------------------------AI Annotation System - Button End--------------------------------------*/}
+
         {(userHighlights.length > 0 ||
           userTexts.length > 0 ||
           userDrawings.length > 0) && (
@@ -203,6 +225,9 @@ export default function App() {
           >
             추가된 애노테이션: 하이라이트 {userHighlights.length}개, 텍스트{" "}
             {userTexts.length}개, 그림 {userDrawings.length}개
+            {/*--------------------------------------AI Annotation System - Count--------------------------------------*/}
+            {aiAnnotations.length > 0 && `, AI ${aiAnnotations.length}개`}
+            {/*--------------------------------------AI Annotation System - Count End--------------------------------------*/}
           </span>
         )}
       </div>
@@ -216,6 +241,23 @@ export default function App() {
         <div style={{ fontSize: 12, opacity: 0.7 }}>
           now: {nowSec.toFixed(2)}s
         </div>
+        {/*--------------------------------------AI Annotation System - Script Display--------------------------------------*/}
+        {aiScript && (
+          <div
+            style={{
+              marginTop: "10px",
+              padding: "10px",
+              backgroundColor: "#f3f4f6",
+              borderRadius: "4px",
+              fontSize: "14px",
+              maxWidth: "600px",
+            }}
+          >
+            <strong>🎙 AI 생성 스크립트:</strong>
+            <div style={{ marginTop: "5px" }}>{aiScript}</div>
+          </div>
+        )}
+        {/*--------------------------------------AI Annotation System - Script Display End--------------------------------------*/}
       </div>
       {/*-------------------------------------오디오 UI-------------------------------------*/}
 

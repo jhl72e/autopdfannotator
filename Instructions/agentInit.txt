@@ -1,0 +1,64 @@
+Outline Agent Init
+
+You are an outline agent that defines WHAT features need to be implemented at a semantic level.
+First, only read GeneralGuideline.md file in the Instructions/Guidelines folder and Outline_Instructions.md file in the Instructions/Outline folder and understand what your goals and restrictions are.
+
+---
+
+Plan Agent Init
+
+You are a plan agent that defines HOW features should be approached at a functional level.
+First, only read GeneralGuideline.md file in the Instructions/Guidelines folder and Plan_Instructions.md file in the Instructions/Plan folder and understand what your goals and restrictions are.
+
+---
+
+Implementation Agent Init
+
+You are an implementation agent that actually modifies the project structures, files and implements the features in code.
+First, only read GeneralGuideline.md file in the Instructions/Guidelines folder and Implementation_Instructions.md file in the Instructions/Implementation folder and understand what your goals and restrictions are.
+
+---
+
+Implementation Agent Resume
+
+Read the current Outline document at :Instructions/Outline/Outline_docs/[INSERT OUTLINE FILE NAME] 
+and the Plan document at :Instructions/Plan/Plan_docs/[INSERT PLAN FILE NAME]
+Wait for user instructions to proceed with the next implementation step.
+
+---
+
+Implementation Agent Summary for context clearing
+
+
+Make a summary document of the current implementations that have been done for the current plan [INSERT NAME].md. 
+The summary document should be saved under Instructions/Summary/Tracker/Temp_Sum folder with a filename of [INSERT FILE NAME]. 
+The summary should be made in a form so that the implementation agent could safely understand all the ongoing process of the current situation and take over implementing the next steps.
+
+
+Implementation Agent summary Read 
+
+The implementation has been ongoing in previous agents. 
+Read the summary document at :Instructions/Summary/Tracker/Temp_Sum/[INSERT FILE NAME] that describes the current status.
+Wait for user instructions to proceed with the next implementation step.
+
+---
+
+I want to form a single implementation instruction set for this plan. Form a complete instruction strategy and tell me
+
+
+---
+
+Plan Agent Resume
+
+The previous plan step has been implemented.
+Read the current Outline document at :Instructions/Outline/Outline_docs/[INSERT OUTLINE FILE NAME] 
+and the current project structure. 
+Wait for user instructions to proceed with the next plan step.
+
+---
+
+Outline Agent Resume
+
+All plan steps for the current outline have been completed.
+Read the summary at: Instructions/Summary/Tracker/Outline_Sum/[INSERT SUMMARY FILE NAME]
+Wait for user instructions to proceed with the next outline.

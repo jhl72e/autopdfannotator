@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Index.js Import Test</title>
+</head>
+<body>
+    <h1>Index.js Import Test</h1>
+    <div id="results"></div>
+
+    <script type="module">
+        const resultsDiv = document.getElementById('results');
+
+        function log(message, isError = false) {
+            const p = document.createElement('p');
+            p.textContent = message;
+            p.style.color = isError ? 'red' : 'green';
+            resultsDiv.appendChild(p);
+            console.log(message);
+        }
+
+        try {
+            // Test 1: Import AnnotationRenderer
+            log('Test 1: Importing AnnotationRenderer...');
+            const module1 = await import('../src/index.js');
+
+            if (module1.AnnotationRenderer) {
+                log('✅ AnnotationRenderer imported successfully');
+                log(`   Type: ${typeof module1.AnnotationRenderer}`);
+            } else {
+                log('❌ AnnotationRenderer not found in exports', true);
+            }
+
+            // Test 2: Import all core subsystems
+            log('\nTest 2: Importing all core subsystems...');
+            const { AnnotationRenderer, PDFRenderer, LayerManager, TimelineSync } = module1;
+
+            if (AnnotationRenderer && PDFRenderer && LayerManager && TimelineSync) {
+                log('✅ All core subsystems imported successfully');
+                log(`   AnnotationRenderer: ${typeof AnnotationRenderer}`);
+                log(`   PDFRenderer: ${typeof PDFRenderer}`);
+                log(`   LayerManager: ${typeof LayerManager}`);
+                log(`   TimelineSync: ${typeof TimelineSync}`);
+            } else {
+                log('❌ Some core subsystems missing', true);
+            }
+
+            // Test 3: Import utilities
+            log('\nTest 3: Importing utilities...');
+            const { coordinateUtils, viewportUtils } = module1;
+
+            if (coordinateUtils && viewportUtils) {
+                log('✅ Utilities imported successfully');
+                log(`   coordinateUtils: ${typeof coordinateUtils}`);
+                log(`   viewportUtils: ${typeof viewportUtils}`);
+                log(`   coordinateUtils functions: ${Object.keys(coordinateUtils).join(', ')}`);
+                log(`   viewportUtils functions: ${Object.keys(viewportUtils).join(', ')}`);
+            } else {
+                log('❌ Utilities missing', true);
+            }
+
+            // Test 4: Import layers
+            log('\nTest 4: Importing layer components...');
+            const { HighlightLayer, TextLayer, DrawingLayer } = module1;
+
+            if (HighlightLayer && TextLayer && DrawingLayer) {
+                log('✅ Layer components imported successfully');
+                log(`   HighlightLayer: ${typeof HighlightLayer}`);
+                log(`   TextLayer: ${typeof TextLayer}`);
+                log(`   DrawingLayer: ${typeof DrawingLayer}`);
+            } else {
+                log('❌ Some layer components missing', true);
+            }
+
+            // Test 5: Import metadata
+            log('\nTest 5: Importing package metadata...');
+            const { VERSION, LIB_NAME } = module1;
+
+            if (VERSION && LIB_NAME) {
+                log('✅ Package metadata imported successfully');
+                log(`   VERSION: ${VERSION}`);
+                log(`   LIB_NAME: ${LIB_NAME}`);
+            } else {
+                log('❌ Package metadata missing', true);
+            }
+
+            // Test 6: Namespace import
+            log('\nTest 6: Testing namespace import...');
+            const Renderer = await import('../src/index.js');
+
+            const exports = Object.keys(Renderer);
+            log('✅ Namespace import successful');
+            log(`   Total exports: ${exports.length}`);
+            log(`   Exports: ${exports.join(', ')}`);
+
+            log('\n🎉 All tests completed successfully!');
+
+        } catch (error) {
+            log(`❌ Test failed with error: ${error.message}`, true);
+            console.error(error);
+        }
+    </script>
+</body>
+</html>

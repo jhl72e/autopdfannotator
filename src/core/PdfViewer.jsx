@@ -1,12 +1,37 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import * as pdfjsLib from "pdfjs-dist";
-import HighlightLayer from "./layers/HighlightLayer";
-import TextLayer from "./layers/TextLayer";
-import DrawingLayer from "./layers/DrawingLayer";
+import HighlightLayer from "../layers/HighlightLayer";
+import TextLayer from "../layers/TextLayer";
+import DrawingLayer from "../layers/DrawingLayer";
+import { calculateViewport } from "../utils/viewportUtils";
+
+/**
+ * @typedef {import('../types/annotations').Annotation} Annotation
+ * @typedef {import('../types/annotations').Viewport} Viewport
+ */
 
 // PDF.js worker 설정 - 로컬 파일 사용
 pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.js";
 
+/**
+ * PDF Viewer with Annotation Overlay
+ *
+ * Renders PDF documents with dynamic annotation layers synchronized to timeline position.
+ * Supports highlight, text, and ink annotations with progressive animations.
+ *
+ * @param {Object} props - Component props
+ * @param {string} props.pdfUrl - URL to PDF document
+ * @param {number} props.pageNum - Current page number (1-indexed)
+ * @param {Function} [props.onPageChange] - Callback when page changes
+ * @param {Function} [props.onPdfLoad] - Callback when PDF loads, receives {pageCount}
+ * @param {Function} [props.onError] - Callback when error occurs
+ * @param {number} [props.scale=1.5] - Zoom scale factor
+ * @param {string} [props.className=""] - Additional CSS class
+ * @param {Object} [props.style={}] - Additional inline styles
+ * @param {Annotation[]} [props.annotations=[]] - Array of annotations to render
+ * @param {number} [props.nowSec=0] - Current timeline position in seconds
+ * @returns {JSX.Element}
+ */
 const PdfViewer = ({
   pdfUrl,
   pageNum,
@@ -28,13 +53,6 @@ const PdfViewer = ({
   const [currentPage, setCurrentPage] = useState(null);
   const renderTaskRef = useRef(null);
   const isRenderingRef = useRef(false);
-
-  console.log(
-    "PdfViewer 컴포넌트 렌더링됨 - pageNum:",
-    pageNum,
-    "scale:",
-    scale
-  );
 
   const parsedAnnos = {
     H: annotations.filter(
@@ -125,7 +143,7 @@ const PdfViewer = ({
         return;
       }
 
-      const newViewport = page.getViewport({ scale });
+      const newViewport = calculateViewport(page, scale);
 
       // Canvas 크기 설정
       canvas.height = newViewport.height;
