@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vanilla JS Example - PDF Annotation Renderer</title>
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <div id="app">
+    <div class="header">
+      <h1>Vanilla JavaScript Example</h1>
+      <p class="subtitle">
+        Framework-agnostic imperative API usage with manual DOM manipulation.
+        Same features as react-basic without React.
+      </p>
+    </div>
+
+    <!-- PDF Container -->
+    <div id="pdf-container" class="pdf-container">
+      <canvas id="pdf-canvas"></canvas>
+      <div id="layer-container" class="layer-container"></div>
+    </div>
+
+    <!-- Controls -->
+    <div id="controls" class="controls">
+      <!-- Page Navigation -->
+      <div class="control-group">
+        <button id="prev-page" class="btn">Previous</button>
+        <span id="page-display" class="display">Page 1 of 0</span>
+        <button id="next-page" class="btn">Next</button>
+      </div>
+
+      <!-- Zoom Controls -->
+      <div class="control-group">
+        <button id="zoom-out" class="btn">Zoom Out</button>
+        <span id="zoom-display" class="display">150%</span>
+        <button id="zoom-in" class="btn">Zoom In</button>
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instructions">
+      <strong>💡 How to use:</strong>
+      <ul>
+        <li>Use Previous/Next buttons to navigate pages</li>
+        <li>Use Zoom In/Out buttons to adjust scale</li>
+        <li>Annotations loaded from fixtures (same as react-basic)</li>
+      </ul>
+    </div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

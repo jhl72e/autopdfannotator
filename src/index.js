@@ -59,10 +59,18 @@ export { viewportUtils };
 // Type Definitions & Validators
 // ============================================================================
 
-// Note: Type definitions are currently in src/types/annotations.js
-// Future: Individual type files and validators
-// import * as validators from './types/validators.js';
-// export { validators };
+// Type definitions in src/types/annotations.js
+
+/**
+ * Type Validators - Optional data normalization
+ *
+ * Import separately to use defensive normalization for annotation data.
+ * These validators are standalone utilities that do not modify the core system.
+ */
+export { normalizeAnnotationArray } from './types/validators.js';
+
+// Namespace export for all validator utilities
+export * as TypeValidators from './types/index.js';
 
 // ============================================================================
 // Framework Adapters

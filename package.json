@@ -1,8 +1,8 @@
 {
-  "name": "pdfautoannotator",
-  "private": true,
-  "version": "0.0.0",
+  "name": "@ai-annotator/renderer",
+  "version": "0.1.0",
   "type": "module",
+  "main": "./src/index.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
