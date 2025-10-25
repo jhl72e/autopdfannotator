@@ -1,7 +1,14 @@
 import { useState } from 'react';
 import { AnnotPdf } from '@ai-annotator/renderer';
+import * as pdfjsLib from 'pdfjs-dist';
 import { sampleAnnotations } from '../../shared/fixtures/annotations-sample.js';
 import Controls from './components/Controls.jsx';
+
+// Configure PDF.js worker (call once at app startup)
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 function App() {
   // State management

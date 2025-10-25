@@ -1,0 +1,39 @@
+# Source files (only dist/ published)
+src/
+
+# Development files
+examples/
+test/
+Instructions/
+docs/
+.github/
+.vscode/
+.claude/
+
+# Configuration files
+*.config.js
+*.config.dev.js
+index.html
+.eslintrc.*
+.gitignore
+.DS_Store
+
+# Logs and temporary files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.tmp
+*.tgz
+
+# Build artifacts not needed
+dist-ssr/
+
+# Environment files
+.env
+.env.*
+
+# Git files
+.git/
+.gitattributes

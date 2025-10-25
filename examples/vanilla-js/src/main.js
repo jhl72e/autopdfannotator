@@ -1,5 +1,12 @@
 import { AnnotationRenderer } from '@ai-annotator/renderer';
+import * as pdfjsLib from 'pdfjs-dist';
 import { sampleAnnotations } from '../../shared/fixtures/annotations-sample.js';
+
+// Configure PDF.js worker (call once at app startup)
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 // ============================================================================
 // State Variables (Manual State Management)

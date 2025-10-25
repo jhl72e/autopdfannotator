@@ -1,7 +1,14 @@
 import { useState } from 'react';
+import * as pdfjsLib from 'pdfjs-dist';
 import { lectureAnnotations } from '../../shared/fixtures/annotations-lecture.js';
 import PdfDisplay from './components/PdfDisplay.jsx';
 import AudioPlayer from './components/AudioPlayer.jsx';
+
+// Configure PDF.js worker (call once at app startup)
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 function App() {
   // State management

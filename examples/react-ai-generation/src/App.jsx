@@ -1,9 +1,16 @@
 import { useState, useEffect } from 'react';
+import * as pdfjsLib from 'pdfjs-dist';
 import PdfDisplay from './components/PdfDisplay.jsx';
 import GenerationPanel from './components/GenerationPanel.jsx';
 import TimelineControls from './components/TimelineControls.jsx';
 import OpenAIService from './services/OpenAIService.js';
 import PDFTextExtractor from './services/PDFTextExtractor.js';
+
+// Configure PDF.js worker (call once at app startup)
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 function App() {
   // PDF state

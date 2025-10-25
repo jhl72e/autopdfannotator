@@ -35,9 +35,6 @@ export class PDFRenderer {
      * @type {RenderTask|null}
      */
     this.renderTask = null;
-
-    // Configure pdf.js worker
-    pdfjsLib.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs";
   }
 
   /**

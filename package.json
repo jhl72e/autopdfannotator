@@ -2,18 +2,70 @@
   "name": "@ai-annotator/renderer",
   "version": "0.1.0",
   "type": "module",
-  "main": "./src/index.js",
+  "description": "Framework-agnostic PDF annotation renderer with timeline synchronization for educational content and interactive documents",
+  "keywords": [
+    "pdf",
+    "annotations",
+    "renderer",
+    "timeline",
+    "pdfjs",
+    "education",
+    "react",
+    "canvas",
+    "highlights",
+    "interactive",
+    "viewer",
+    "timeline-sync"
+  ],
+  "author": "jhl72e <jhl72e@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jhl72e/pdfAutoAnnotator.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jhl72e/pdfAutoAnnotator/issues"
+  },
+  "homepage": "https://github.com/jhl72e/pdfAutoAnnotator#readme",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist/",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "sideEffects": false,
   "scripts": {
-    "dev": "vite",
     "build": "vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+    "test": "echo \"Tests not yet implemented\" && exit 0",
+    "prepublishOnly": "npm run build",
+    "lint": "eslint ."
   },
   "dependencies": {
-    "pdfjs-dist": "^5.4.149",
-    "puppeteer": "^24.22.0",
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1"
+    "pdfjs-dist": "^5.4.149"
+  },
+  "peerDependencies": {
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": false
+    },
+    "react-dom": {
+      "optional": false
+    }
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
@@ -24,6 +76,9 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^16.4.0",
+    "puppeteer": "^24.22.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
     "vite": "^7.1.7"
   }
 }
