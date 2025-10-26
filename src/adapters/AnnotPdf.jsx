@@ -2,7 +2,7 @@
 // SECTION 1: IMPORTS
 // ============================================================================
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useCallback } from 'react';
 import { AnnotationRenderer } from '../core/AnnotationRenderer.js';
 
 // ============================================================================
@@ -118,6 +118,37 @@ function AnnotPdf({
    */
   const engineRef = useRef(null);
 
+  /**
+   * Reference to the render operation queue
+   * Ensures sequential execution of async canvas operations
+   * Prevents PDF.js race condition: "Cannot use the same canvas during multiple render() operations"
+   * @type {React.RefObject<Promise<void>>}
+   */
+  const renderQueue = useRef(Promise.resolve());
+
+  // ==========================================================================
+  // SECTION 4.5: RENDER QUEUE HELPER
+  // ==========================================================================
+
+  /**
+   * Queue a render operation to execute sequentially
+   *
+   * This helper ensures that async canvas operations (loadPDF, setPage, setScale)
+   * execute one at a time, preventing concurrent access to the PDF.js canvas.
+   * Uses Promise chaining to maintain operation order.
+   *
+   * @param {Function} operation - Async function returning a Promise
+   * @returns {void}
+   */
+  const queueOperation = useCallback((operation) => {
+    renderQueue.current = renderQueue.current
+      .then(operation)
+      .catch(error => {
+        // Log errors but don't break the queue
+        console.error('AnnotPdf: Queued operation failed:', error);
+      });
+  }, []);
+
   // ==========================================================================
   // SECTION 5: ENGINE INITIALIZATION AND CLEANUP
   // ==========================================================================
@@ -161,6 +192,7 @@ function AnnotPdf({
   /**
    * Load PDF document when pdfUrl prop changes
    * Handles async operation with cancellation support
+   * Uses render queue to prevent concurrent canvas operations
    */
   useEffect(() => {
     // Guard: Engine must exist and pdfUrl must be valid
@@ -200,13 +232,14 @@ function AnnotPdf({
       }
     };
 
-    loadPdf();
+    // Queue the PDF loading operation to prevent race conditions
+    queueOperation(loadPdf);
 
     // Cleanup: Prevent state updates if component unmounts during load
     return () => {
       cancelled = true;
     };
-  }, [pdfUrl, onLoad, onError]);
+  }, [pdfUrl, onLoad, onError, queueOperation]);
 
   // ==========================================================================
   // SECTION 7: PAGE SYNCHRONIZATION
@@ -214,6 +247,7 @@ function AnnotPdf({
 
   /**
    * Sync page prop to engine.setPage() method
+   * Uses render queue to prevent concurrent canvas operations
    */
   useEffect(() => {
     // Guard: Engine must exist and page must be valid
@@ -221,9 +255,11 @@ function AnnotPdf({
       return;
     }
 
-    // Sync page to engine
-    engineRef.current.setPage(page)
-      .then((result) => {
+    // Queue the page change operation to prevent race conditions
+    queueOperation(async () => {
+      try {
+        const result = await engineRef.current.setPage(page);
+
         // Check if page change was successful
         if (!result.success) {
           console.error('AnnotPdf: Failed to set page:', result.error);
@@ -237,14 +273,14 @@ function AnnotPdf({
         if (onPageChange) {
           onPageChange(page);
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('AnnotPdf: Failed to set page:', error);
         if (onError) {
           onError(error);
         }
-      });
-  }, [page, onPageChange, onError]);
+      }
+    });
+  }, [page, onPageChange, onError, queueOperation]);
 
   // ==========================================================================
   // SECTION 8: SCALE SYNCHRONIZATION
@@ -252,6 +288,7 @@ function AnnotPdf({
 
   /**
    * Sync scale prop to engine.setScale() method
+   * Uses render queue to prevent concurrent canvas operations
    */
   useEffect(() => {
     // Guard: Engine must exist and scale must be valid
@@ -259,9 +296,11 @@ function AnnotPdf({
       return;
     }
 
-    // Sync scale to engine (async method)
-    engineRef.current.setScale(scale)
-      .then((result) => {
+    // Queue the scale change operation to prevent race conditions
+    queueOperation(async () => {
+      try {
+        const result = await engineRef.current.setScale(scale);
+
         // Check if scale change was successful
         if (!result.success) {
           console.error('AnnotPdf: Failed to set scale:', result.error);
@@ -269,14 +308,14 @@ function AnnotPdf({
             onError(new Error(result.error));
           }
         }
-      })
-      .catch((error) => {
+      } catch (error) {
         console.error('AnnotPdf: Failed to set scale:', error);
         if (onError) {
           onError(error);
         }
-      });
-  }, [scale, onError]);
+      }
+    });
+  }, [scale, onError, queueOperation]);
 
   // ==========================================================================
   // SECTION 9: ANNOTATIONS SYNCHRONIZATION
