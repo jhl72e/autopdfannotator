@@ -102,4 +102,4 @@ export const VERSION = '0.1.0';
  * Library name
  * @constant {string}
  */
-export const LIB_NAME = '@ai-annotator/renderer';
+export const LIB_NAME = 'web-annotation-renderer';

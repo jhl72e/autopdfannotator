@@ -1,6 +1,6 @@
 {
-  "name": "@ai-annotator/renderer",
-  "version": "0.1.0",
+  "name": "web-annotation-renderer",
+  "version": "0.1.1",
   "type": "module",
   "description": "Framework-agnostic PDF annotation renderer with timeline synchronization for educational content and interactive documents",
   "keywords": [
