@@ -34,9 +34,6 @@ class HighlightLayer extends BaseLayer {
 
     // Initialize element storage
     this.elements = new Map();
-
-    // Initialize RAF ID
-    this.rafId = null;
   }
 
   /**
@@ -111,64 +108,50 @@ class HighlightLayer extends BaseLayer {
   /**
    * Updates highlight animations based on current timeline position
    *
-   * Starts requestAnimationFrame loop to animate scaleX transform for
-   * each highlight element. Calculates progress for each quad segment
-   * and updates visibility.
+   * Updates scaleX transform for each highlight element based on timeline.
+   * Calculates progress for each quad segment and updates visibility.
+   * Renders once per call - no continuous loop.
    *
    * @param {number} nowSec - Current timeline position in seconds
    */
   updateTime(nowSec) {
     super.updateTime(nowSec);
 
-    // Cancel existing RAF if running
-    if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
+    if (this.isDestroyed) {
+      return;
     }
 
-    // Start animation loop
-    const animate = () => {
-      if (this.isDestroyed) {
-        return;
+    // Update each highlight element
+    this.elements.forEach(({ element, wrapper, annotation, segStart, segEnd }) => {
+      // Hide wrapper if time hasn't reached annotation start
+      if (nowSec < annotation.start) {
+        wrapper.style.display = 'none';
+      } else {
+        // Show wrapper
+        wrapper.style.display = 'block';
+
+        // Calculate global progress (0 to 1)
+        const globalProgress = Math.max(
+          0,
+          Math.min(
+            1,
+            (nowSec - annotation.start) / Math.max(1e-6, annotation.end - annotation.start)
+          )
+        );
+
+        // Calculate local progress for this quad segment (0 to 1)
+        const localProgress = Math.max(
+          0,
+          Math.min(
+            1,
+            (globalProgress - segStart) / Math.max(1e-6, segEnd - segStart)
+          )
+        );
+
+        // Apply scaleX transform
+        element.style.transform = `scaleX(${localProgress})`;
       }
-
-      // Update each highlight element
-      this.elements.forEach(({ element, wrapper, annotation, segStart, segEnd }) => {
-        // Hide wrapper if time hasn't reached annotation start
-        if (nowSec < annotation.start) {
-          wrapper.style.display = 'none';
-        } else {
-          // Show wrapper
-          wrapper.style.display = 'block';
-
-          // Calculate global progress (0 to 1)
-          const globalProgress = Math.max(
-            0,
-            Math.min(
-              1,
-              (nowSec - annotation.start) / Math.max(1e-6, annotation.end - annotation.start)
-            )
-          );
-
-          // Calculate local progress for this quad segment (0 to 1)
-          const localProgress = Math.max(
-            0,
-            Math.min(
-              1,
-              (globalProgress - segStart) / Math.max(1e-6, segEnd - segStart)
-            )
-          );
-
-          // Apply scaleX transform
-          element.style.transform = `scaleX(${localProgress})`;
-        }
-      });
-
-      // Schedule next frame
-      this.rafId = requestAnimationFrame(animate);
-    };
-
-    animate();
+    });
   }
 
   /**
@@ -183,16 +166,9 @@ class HighlightLayer extends BaseLayer {
   /**
    * Destroys the layer and releases all resources
    *
-   * Cancels animation loop, clears element storage, removes DOM elements,
-   * and calls parent cleanup.
+   * Clears element storage, removes DOM elements, and calls parent cleanup.
    */
   destroy() {
-    // Cancel RAF if running
-    if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
-    }
-
     // Clear element storage
     this.elements.clear();
     this.elements = null;

@@ -42,9 +42,6 @@ class DrawingLayer extends BaseLayer {
     // Get 2D context
     this.ctx = this.canvasElement.getContext('2d');
 
-    // Initialize animation frame ID
-    this.rafId = null;
-
     // Setup canvas with device pixel ratio
     this._setupCanvas();
   }
@@ -91,11 +88,11 @@ class DrawingLayer extends BaseLayer {
   }
 
   /**
-   * Updates timeline position and starts progressive stroke drawing
+   * Updates timeline position and draws progressive strokes
    *
-   * Cancels any existing animation loop and starts a new requestAnimationFrame
-   * loop to redraw the canvas with strokes progressively drawn based on elapsed time.
-   * Each frame clears the canvas and redraws all visible strokes.
+   * Redraws the canvas with strokes progressively drawn based on elapsed time.
+   * Clears the canvas and redraws all visible strokes.
+   * Renders once per call - no continuous loop.
    *
    * @param {number} nowSec - Current timeline position in seconds
    * @throws {Error} If called after layer is destroyed
@@ -104,110 +101,90 @@ class DrawingLayer extends BaseLayer {
   updateTime(nowSec) {
     super.updateTime(nowSec);
 
-    // Cancel existing RAF to prevent multiple loops
-    if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
-    }
+    // Check destroyed state
+    if (this.isDestroyed) return;
 
-    // Start drawing loop
-    const draw = () => {
-      // Check destroyed state
-      if (this.isDestroyed) return;
+    // Clear canvas
+    this.ctx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
 
-      // Clear canvas
-      this.ctx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
+    // Draw each annotation
+    for (const a of this.annotations) {
+      // Skip annotations that haven't started yet
+      if (nowSec < a.start) continue;
 
-      // Draw each annotation
-      for (const a of this.annotations) {
-        // Skip annotations that haven't started yet
-        if (nowSec < a.start) continue;
+      // Calculate elapsed time (capped at duration for persistence)
+      const duration = a.end - a.start;
+      const elapsed = Math.min(nowSec - a.start, duration);
 
-        // Calculate elapsed time (capped at duration for persistence)
-        const duration = a.end - a.start;
-        const elapsed = Math.min(nowSec - a.start, duration);
+      // Draw each stroke
+      for (const stroke of (a.strokes || [])) {
+        // Configure stroke style
+        this.ctx.lineCap = 'round';
+        this.ctx.lineJoin = 'round';
+        this.ctx.strokeStyle = stroke.color || '#1f2937';
+        this.ctx.lineWidth = stroke.size || 3;
+        this.ctx.beginPath();
 
-        // Draw each stroke
-        for (const stroke of (a.strokes || [])) {
-          // Configure stroke style
-          this.ctx.lineCap = 'round';
-          this.ctx.lineJoin = 'round';
-          this.ctx.strokeStyle = stroke.color || '#1f2937';
-          this.ctx.lineWidth = stroke.size || 3;
-          this.ctx.beginPath();
+        let started = false;
 
-          let started = false;
+        // Draw points up to current time
+        for (const point of stroke.points) {
+          // Skip points that haven't been drawn yet
+          if (point.t > elapsed) break;
 
-          // Draw points up to current time
-          for (const point of stroke.points) {
-            // Skip points that haven't been drawn yet
-            if (point.t > elapsed) break;
+          // Convert normalized coordinates to canvas pixels
+          const x = point.x * this.viewport.width;
+          const y = point.y * this.viewport.height;
 
-            // Convert normalized coordinates to canvas pixels
-            const x = point.x * this.viewport.width;
-            const y = point.y * this.viewport.height;
-
-            if (!started) {
-              this.ctx.moveTo(x, y);
-              started = true;
-            } else {
-              this.ctx.lineTo(x, y);
-            }
-          }
-
-          // Render the stroke
-          if (started) {
-            this.ctx.stroke();
+          if (!started) {
+            this.ctx.moveTo(x, y);
+            started = true;
+          } else {
+            this.ctx.lineTo(x, y);
           }
         }
+
+        // Render the stroke
+        if (started) {
+          this.ctx.stroke();
+        }
       }
-
-      // Schedule next frame
-      this.rafId = requestAnimationFrame(draw);
-    };
-
-    // Start the loop
-    draw();
+    }
   }
 
   /**
    * Renders the layer content
    *
-   * No-op for DrawingLayer - canvas rendering happens in updateTime() RAF loop.
-   * Canvas element is created once in constructor and drawn to continuously.
+   * No-op for DrawingLayer - canvas rendering happens in updateTime().
+   * Canvas element is created once in constructor.
    *
    * @override
    */
   render() {
-    // No-op: Canvas rendering happens in updateTime() RAF loop
+    // No-op: Canvas rendering happens in updateTime()
     // Canvas element is created once in constructor
   }
 
   /**
    * Updates the visual state of the layer
    *
-   * Not used for DrawingLayer - updateTime() handles updates via RAF loop.
+   * Not used for DrawingLayer - updateTime() handles drawing directly.
    *
    * @override
    */
   update() {
-    // Not used - updateTime handles drawing via RAF loop
+    // Not used - updateTime handles drawing directly
   }
 
   /**
    * Destroys the layer and releases resources
    *
-   * Cancels animation loop, clears references, and removes canvas from DOM.
+   * Clears references and removes canvas from DOM.
    * Safe to call multiple times (idempotent).
    *
    * @override
    */
   destroy() {
-    // Cancel animation loop first
-    if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = null;
-    }
-
     // Clear context reference
     this.ctx = null;
 
