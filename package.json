@@ -1,6 +1,6 @@
 {
   "name": "web-annotation-renderer",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "type": "module",
   "description": "Framework-agnostic PDF annotation renderer with timeline synchronization for educational content and interactive documents",
   "keywords": [
