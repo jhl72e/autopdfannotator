@@ -10,13 +10,15 @@ This library renders structured annotation data (highlights, text boxes, drawing
 ## Features
 
 - 📄 **PDF Rendering** - Built on pdf.js for reliable PDF display
-- ⏱️ **Timeline Synchronization** - Sync annotations with audio/video playback
+- ⏱️ **Timeline Synchronization** - Sync annotations with audio/video playback or manual controls
 - 🎨 **Multiple Annotation Types** - Highlights, text boxes, and ink drawings
 - ⚛️ **Framework Agnostic** - Core engine works with any framework
 - ⚛️ **React Adapter** - Ready-to-use React component included
 - 🎯 **Progressive Animations** - Smooth reveal animations based on timeline
+- 🎬 **Continuous Sync** - Built-in support for real-time audio/video synchronization
 - 📦 **Simple Setup** - One-line worker configuration
 - 🌲 **Tree-shakeable** - Import only what you need
+- ⚡ **Performance Optimized** - Efficient rendering without unnecessary re-draws
 
 ## Installation
 
@@ -144,6 +146,104 @@ function App() {
   );
 }
 ```
+
+## Audio/Video Synchronization
+
+For smooth, real-time synchronization with audio or video playback, use the continuous sync feature:
+
+### Vanilla JavaScript
+
+```javascript
+const renderer = new AnnotationRenderer({
+  container: document.getElementById("annotation-container"),
+  canvasElement: document.getElementById("pdf-canvas"),
+});
+
+await renderer.loadPDF("/document.pdf");
+await renderer.setPage(1);
+
+// Get reference to audio/video element
+const audioElement = document.getElementById("lecture-audio");
+
+// Start continuous sync when playback begins
+audioElement.addEventListener("play", () => {
+  renderer.timelineSync.startContinuousSync(() => audioElement.currentTime);
+});
+
+// Stop continuous sync when playback pauses
+audioElement.addEventListener("pause", () => {
+  renderer.timelineSync.stopContinuousSync();
+});
+
+// Clean up on page unload
+window.addEventListener("beforeunload", () => {
+  renderer.timelineSync.stopContinuousSync();
+  renderer.destroy();
+});
+```
+
+### React
+
+```javascript
+import { useRef, useEffect } from "react";
+import { AnnotPdf } from "web-annotation-renderer";
+
+function VideoSyncViewer() {
+  const audioRef = useRef(null);
+  const engineRef = useRef(null);
+
+  // Access the internal engine through the component
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handlePlay = () => {
+      // Start continuous sync at 60fps
+      if (engineRef.current) {
+        engineRef.current.timelineSync.startContinuousSync(
+          () => audio.currentTime
+        );
+      }
+    };
+
+    const handlePause = () => {
+      // Stop continuous sync
+      if (engineRef.current) {
+        engineRef.current.timelineSync.stopContinuousSync();
+      }
+    };
+
+    audio.addEventListener("play", handlePlay);
+    audio.addEventListener("pause", handlePause);
+
+    return () => {
+      audio.removeEventListener("play", handlePlay);
+      audio.removeEventListener("pause", handlePause);
+      engineRef.current?.timelineSync.stopContinuousSync();
+    };
+  }, []);
+
+  return (
+    <div>
+      <AnnotPdf
+        ref={engineRef}
+        pdfUrl="/lecture.pdf"
+        annotations={annotations}
+        onLoad={(doc) => console.log("PDF loaded")}
+      />
+      <audio ref={audioRef} src="/lecture.mp3" controls />
+    </div>
+  );
+}
+```
+
+**How it works:**
+- `startContinuousSync()` creates a 60fps requestAnimationFrame loop
+- Each frame reads the current time from your callback function
+- Annotations update smoothly in sync with playback
+- `stopContinuousSync()` stops the loop to save resources when paused
+
+**For manual controls** (sliders, buttons), simply use `renderer.setTime()` or the `currentTime` prop - continuous sync is not needed.
 
 ## API Reference
 
@@ -300,6 +400,69 @@ renderer.destroy();
 **Returns:** `void`
 
 **Important:** Call this before removing the renderer instance to prevent memory leaks.
+
+---
+
+### TimelineSync API
+
+The `AnnotationRenderer` exposes a `timelineSync` property for advanced timeline control.
+
+#### `timelineSync.startContinuousSync(getTimeFunction)`
+
+Start continuous timeline synchronization with audio/video.
+
+```javascript
+renderer.timelineSync.startContinuousSync(() => audioElement.currentTime);
+```
+
+**Parameters:**
+
+- `getTimeFunction` (Function): Callback that returns current time in seconds
+
+**Returns:** `void`
+
+**Details:** Creates a 60fps requestAnimationFrame loop that continuously reads time from the callback and updates annotations. Use this for smooth audio/video synchronization.
+
+#### `timelineSync.stopContinuousSync()`
+
+Stop continuous timeline synchronization.
+
+```javascript
+renderer.timelineSync.stopContinuousSync();
+```
+
+**Returns:** `void`
+
+**Important:** Always call this when audio/video pauses or when cleaning up to prevent unnecessary rendering.
+
+#### `timelineSync.getCurrentTime()`
+
+Get the current timeline position.
+
+```javascript
+const currentTime = renderer.timelineSync.getCurrentTime();
+```
+
+**Returns:** `number` - Current timeline position in seconds
+
+#### `timelineSync.subscribe(callback)`
+
+Subscribe to timeline updates.
+
+```javascript
+const unsubscribe = renderer.timelineSync.subscribe((time) => {
+  console.log("Timeline updated:", time);
+});
+
+// Later: unsubscribe
+unsubscribe();
+```
+
+**Parameters:**
+
+- `callback` (Function): Called when timeline updates with current time
+
+**Returns:** `Function` - Unsubscribe function
 
 ---
 
@@ -713,11 +876,13 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
 npm install --save-dev @types/react @types/react-dom
 ```
 
-### Canvas rendering issues in React StrictMode
+### Timeline updates feel sluggish
 
-**Symptoms:** Double rendering or canvas errors in development
+**Symptoms:** Annotations don't update smoothly when dragging timeline slider
 
-**Solution:** Consider removing `<React.StrictMode>` wrapper during development (it's safe to keep in production).
+**Solution:**
+- For manual controls (sliders, buttons): Use `renderer.setTime()` or the `currentTime` prop directly - the system is optimized for discrete updates
+- For audio/video: Use `timelineSync.startContinuousSync()` for smooth 60fps synchronization
 
 ## Migration Guide
 
@@ -753,8 +918,8 @@ renderer.setTime(5.0);
 
 Check out working examples in the test projects:
 
-- **Vanilla JavaScript:** See `test-vanilla/` for a complete implementation
-- **React:** See `test-react/` for React component usage
+- **Vanilla JavaScript:** See `examples/vanilla-js/` for a complete implementation with manual timeline control
+- **React:** See `examples/react-basic/` for React component usage with slider controls
 
 Both examples include:
 
@@ -762,6 +927,11 @@ Both examples include:
 - Page navigation and zoom controls
 - Timeline slider with annotation synchronization
 - All three annotation types (highlight, text, ink)
+- Optimized rendering for smooth, flicker-free updates
+
+**Use Cases:**
+- **Manual timeline control** (sliders, buttons): Use `setTime()` for discrete updates
+- **Audio/video sync**: Use `timelineSync.startContinuousSync()` for continuous 60fps updates
 
 ## License
 
