@@ -239,7 +239,7 @@ function AnnotPdf({
     return () => {
       cancelled = true;
     };
-  }, [pdfUrl, onLoad, onError, queueOperation]);
+  }, [pdfUrl, queueOperation]);
 
   // ==========================================================================
   // SECTION 7: PAGE SYNCHRONIZATION
@@ -280,7 +280,7 @@ function AnnotPdf({
         }
       }
     });
-  }, [page, onPageChange, onError, queueOperation]);
+  }, [page, queueOperation]);
 
   // ==========================================================================
   // SECTION 8: SCALE SYNCHRONIZATION
@@ -315,7 +315,7 @@ function AnnotPdf({
         }
       }
     });
-  }, [scale, onError, queueOperation]);
+  }, [scale, queueOperation]);
 
   // ==========================================================================
   // SECTION 9: ANNOTATIONS SYNCHRONIZATION
@@ -339,7 +339,7 @@ function AnnotPdf({
         onError(error);
       }
     }
-  }, [annotations, onError]);
+  }, [annotations]);
 
   // ==========================================================================
   // SECTION 10: TIMELINE SYNCHRONIZATION
@@ -363,7 +363,7 @@ function AnnotPdf({
         onError(error);
       }
     }
-  }, [currentTime, onError]);
+  }, [currentTime]);
 
   // ==========================================================================
   // SECTION 11: STYLING DEFINITIONS
